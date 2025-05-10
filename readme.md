@@ -51,7 +51,7 @@ The platform aggregates content from multiple providers through a custom impleme
 
 - **🤖 AI Recommendations** - Get personalized anime recommendations based on your watchlist and viewing history using our advanced AI recommendation engine powered by Google's Gemini model.
 
-- **👫 Friends System** - Add friends, see their watchlists, and share recommendations directly with them. Get notified when your friends are watching something new.
+- **👫 Friends System** - Add friends, see their watchlists, and share recommendations directly with them.
 
 - **🔍 Advanced Search** - Find exactly what you're looking for with our powerful search functionality. Filter by genre, year, status, rating, and more.
 
@@ -350,7 +350,7 @@ vercel
 ### Railway (Backend)
 
 ```bash
-cd mugiwara_hub_backend
+cd yonko_hub_backend
 railway up
 ```
 
@@ -393,12 +393,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 ## 🤝 Support & Community
-
-Join our Discord server for support and to connect with other anime enthusiasts:
-
-<a href="https://discord.gg/your-discord-invite">
-   <img src="https://img.shields.io/discord/your-discord-id?color=7289DA&label=Discord&logo=discord&logoColor=white" alt="Discord"/>
-</a>
 
 You can also:
 - Report bugs through GitHub Issues

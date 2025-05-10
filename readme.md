@@ -154,7 +154,7 @@ YonkoHub/
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/YonkoHub.git
+git clone https://github.com/MohinShaikh5689/yonko_hub
 cd YonkoHub/yonko_hub
 
 # Install dependencies

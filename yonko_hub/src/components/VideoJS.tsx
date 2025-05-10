@@ -1,0 +1,709 @@
+'use client'
+
+import { useEffect, useRef } from 'react';
+import videojs from 'video.js';
+import 'video.js/dist/video-js.css';
+import '@videojs/http-streaming';
+import 'videojs-contrib-dash';
+import 'videojs-contrib-quality-levels';
+
+interface VideoJSProps {
+  options: any;
+  onReady?: (player: any) => void;
+}
+
+export default function VideoJS({ options, onReady }: VideoJSProps) {
+  const videoRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<any>(null);
+  const bufferTimerRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!playerRef.current && videoRef.current) {
+      const videoElement = document.createElement('video-js');
+      
+      // Add mobile-friendly attributes
+      videoElement.classList.add('vjs-big-play-centered', 'vjs-16-9');
+      videoElement.setAttribute('controls', 'true');
+      videoElement.setAttribute('playsinline', 'true');
+      videoElement.setAttribute('webkit-playsinline', 'true');
+      videoElement.setAttribute('x5-playsinline', 'true');
+      videoElement.setAttribute('muted', 'false');
+      
+      // IMPORTANT: Don't set autoplay on mobile - let user initiate playback
+      // videoElement.setAttribute('autoplay', 'false');
+      
+      // Use more modest data-setup for mobile compatibility
+      videoElement.setAttribute('data-setup', JSON.stringify({
+        html5: {
+          // More conservative buffer settings for mobile
+          hlsjsConfig: {
+            maxBufferLength: 90, // 1.5 minutes for mobile
+            maxMaxBufferLength: 180, // Maximum possible buffer for mobile
+            manifestLoadingTimeOut: 20000, // Longer timeout for slow mobile networks
+            fragLoadingTimeOut: 20000,
+            enableWorker: true // Enable web workers if available
+          }
+        },
+        fluid: true,
+        responsive: true,
+        playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
+      }));
+      
+      videoRef.current.appendChild(videoElement);
+
+      // Detect mobile device for better settings
+      const isMobile = /iPhone|iPad|iPod|Android|BlackBerry|Opera Mini|IEMobile/i.test(navigator.userAgent);
+      
+      // Enhanced options with mobile-specific optimizations
+      const enhancedOptions = {
+        ...options,
+        html5: {
+          vhs: {
+            // Use native HLS for iOS Safari and Android Chrome when possible
+            overrideNative: !(videojs.browser.IS_SAFARI || 
+                             (videojs.browser.IS_ANDROID && /chrome/i.test(navigator.userAgent))),
+            // More modest retry for mobile
+            maxPlaylistRetries: 3,
+            // Lower bandwidth estimation for mobile networks
+            bandwidth: isMobile ? 2500000 : 5000000,
+            // More conservative buffer settings for mobile
+            bufferSize: isMobile ? 120 : 300, // 2 minutes for mobile, 5 for desktop
+            backBufferLength: 30, // Keep 30s of backward buffer
+            // Mobile-friendly segment loading
+            appendInitSegment: {
+              maxRetry: 5,
+              retryDelay: 1000
+            },
+            // Adjust segment loading based on device
+            segments: {
+              forwardBuffer: isMobile ? 120 : 300, // 2 minutes on mobile
+              forwardBufferLength: isMobile ? 120 : 300
+            },
+            // Mobile-specific ABR settings
+            abr: {
+              enabled: true,
+              defaultBandwidthEstimate: isMobile ? 2000000 : 5000000, // Lower initial estimate for mobile
+              useNetworkInformation: true,
+              // Mobile networks need smoother switching
+              smoothUpswitch: true,
+              bandwidthSafetyFactor: 0.7, // Be more conservative on mobile
+              // Don't limit by player size on desktop, but do on mobile
+              limitRenditionByPlayerDimensions: isMobile
+            },
+            // Disable experimental features
+            experimentalLLHLS: false,
+          },
+          nativeAudioTracks: false,
+          nativeVideoTracks: false,
+          hls: {
+            // Important for mobile
+            limitRenditionByPlayerDimensions: isMobile, 
+            smoothQualityChange: true,
+            // Prefer native HLS in Safari and Android Chrome
+            overrideNative: !(videojs.browser.IS_SAFARI || 
+                            (videojs.browser.IS_ANDROID && /chrome/i.test(navigator.userAgent))),
+            withCredentials: false,
+            cacheEncryptionKeys: true,
+            // Mobile-specific hls.js config
+            hlsjsConfig: {
+              // Mobile-friendly buffer size
+              maxBufferSize: isMobile ? 100 * 1024 * 1024 : 512 * 1024 * 1024, // 100MB for mobile
+              maxBufferLength: isMobile ? 90 : 180, // 1.5 minutes for mobile
+              maxMaxBufferLength: isMobile ? 180 : 300, // 3 minutes max for mobile
+              // Enable stretching for smoother playback
+              stretchShortVideoTrack: true,
+              // Important for mobile: parse discontinuity better
+              lowLatencyMode: false,
+              // Mobile power saving
+              enableSoftwareAES: !isMobile, // Hardware AES is better for mobile battery
+              enableWorker: true, // Web workers for better performance
+              // Mobile-friendly ABR settings
+              startLevel: -1, // Auto
+              abrEwmaDefaultEstimate: isMobile ? 2000000 : 5000000,
+              // More conservative fragment loading for mobile
+              maxFragLookUpTolerance: 0.5,
+              // Retry configuration for mobile networks
+              manifestLoadingMaxRetry: 4,
+              manifestLoadingRetryDelay: 1000,
+              levelLoadingMaxRetry: 4,
+              fragLoadingMaxRetry: 6,
+              // Detect slow mobile network and reduce quality automatically
+              testBandwidth: true
+            }
+          }
+        },
+        liveui: false,
+        responsive: true,
+        fluid: true,
+        fill: true,
+        // Force preload metadata only on mobile to save data
+        preload: isMobile ? "metadata" : "auto",
+        // Mobile-friendly options
+        inactivityTimeout: 3000, // Hide controls faster on mobile
+        playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
+        controlBar: {
+          // Mobile-friendly control bar
+          volumePanel: { inline: !isMobile }, // Vertical volume slider on mobile
+          progressControl: {
+            seekBar: true,
+            // Disable mouse-over tooltips on mobile
+            disableProgressMarkers: isMobile
+          },
+          // Hide pip on mobile if not supported
+          pictureInPictureToggle: !isMobile || document.pictureInPictureEnabled,
+          fullscreenToggle: true,
+          // Mobile-specific settings
+          captionsButton: false, // Hide captions button initially
+          chaptersButton: false  // Hide chapters button initially
+        },
+        // Mobile touch controls
+        userActions: {
+          hotkeys: !isMobile, // Disable hotkeys on mobile
+          doubleClick: true    // Enable double-click for play/pause
+        }
+      };
+
+      // Initialize player with enhanced mobile-friendly options
+      const player = playerRef.current = videojs(videoElement, enhancedOptions, () => {
+
+        
+        // DON'T auto-mute and unmute on mobile - causes playback issues
+        if (!isMobile) {
+          player.muted(true);
+          setTimeout(() => {
+            player.muted(false);
+          }, 1000);
+        }
+        
+        // Initialize buffer system with mobile awareness
+        initBufferingSystem(player, isMobile);
+        
+        // Force buffer loading with mobile awareness
+        forceBufferLoading(player, isMobile);
+        
+        onReady && onReady(player);
+      });
+
+      // Mobile-aware buffer forcing
+      const forceBufferLoading = (player: any, isMobile: boolean) => {
+        try {
+          if (player.tech_ && player.tech_.vhs) {
+            // Set mobile-appropriate buffer size
+            player.tech_.vhs.bufferSize_ = isMobile ? 120 : 300;
+            
+            if (player.tech_.vhs.masterPlaylistController_) {
+              const mainSegmentLoader = player.tech_.vhs.masterPlaylistController_.mainSegmentLoader_;
+              if (mainSegmentLoader) {
+                // Set mobile-appropriate loading parameters
+                mainSegmentLoader.bufferSize_ = isMobile ? 120 : 300;
+                mainSegmentLoader.bandwidth = isMobile ? 2500000 : 10000000;
+                
+                // Force loading of initial segments
+                if (typeof mainSegmentLoader.fillBuffer === 'function') {
+                  mainSegmentLoader.fillBuffer();
+                  
+                  // Schedule fills less frequently on mobile
+                  const fillInterval = setInterval(() => {
+                    if (player && !player.isDisposed() && mainSegmentLoader) {
+                      if (player.readyState() > 2) { // Only if we have enough data to play
+                        mainSegmentLoader.fillBuffer();
+                      }
+                    } else {
+                      clearInterval(fillInterval);
+                    }
+                  }, isMobile ? 5000 : 2000); // Less frequent on mobile
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.log('Mobile buffer optimization failed:', e);
+        }
+      };
+
+      // Mobile-specific error handling
+      player.on('error', function() {
+        const error = player.error();
+        console.error(`VideoJS Error on ${isMobile ? 'mobile' : 'desktop'}:`, error && error.message);
+        
+        // Handle decode errors specifically
+        if (error && error.code === 3) {
+          // Clear the error
+          player.error(undefined);
+          
+          // Mobile-specific recovery
+          if (isMobile) {
+            // On mobile, try a lower quality first
+            const qualityLevels = (player as any).qualityLevels && (player as any).qualityLevels();
+            if (qualityLevels && qualityLevels.length > 1) {
+              // Switch to lowest quality on mobile error
+              for (let i = 0; i < qualityLevels.length; i++) {
+                qualityLevels[i].enabled = (i === 0); // Only enable lowest quality
+              }
+              
+              // Then try to reload
+              player.src(options.sources);
+              player.load();
+              return;
+            }
+          }
+          
+          // Try switching to a different quality if available
+          if (options.switchQualityCallback && typeof options.switchQualityCallback === 'function') {
+            options.switchQualityCallback();
+            return;
+          }
+          
+          // If no quality switch is available, try reloading with a delay
+          setTimeout(() => {
+            if (player && !player.isDisposed()) {
+              // Try with a fresh source object
+              const freshSources = options.sources.map((source: any) => ({
+                ...source,
+                src: `${source.src}&_t=${new Date().getTime()}`
+              }));
+              
+              player.src(freshSources);
+              player.load();
+            }
+          }, isMobile ? 5000 : 3000); // Longer timeout for mobile
+        }
+        // Retry on playlist errors
+        else if (error && (error.code === 2 || error.code === 4)) {
+          // Clear the error
+          player.error(undefined);
+          
+          // Mobile-friendly reload with timeout
+          setTimeout(() => {
+            if (player && !player.isDisposed()) {
+              player.src(options.sources);
+              player.load();
+            }
+          }, isMobile ? 4000 : 2000); // Longer timeout for mobile
+        }
+      });
+
+      // Mobile-aware buffer management system
+      const initBufferingSystem = (player: any, isMobile: boolean) => {
+        // Track if buffering is in progress
+        let isAggressiveBuffering = false;
+        let superAggressiveMode = false;
+        
+        // Setup buffer monitoring with appropriate frequency
+        const startBufferMonitoring = () => {
+          if (bufferTimerRef.current) {
+            clearInterval(bufferTimerRef.current);
+          }
+          
+          // Run buffer check less frequently on mobile
+          bufferTimerRef.current = setInterval(() => {
+            if (!player || player.isDisposed()) {
+              clearInterval(bufferTimerRef.current);
+              return;
+            }
+            
+            const currentTime = player.currentTime();
+            const bufferedEnd = getBufferedEnd(player);
+            const bufferLength = bufferedEnd - currentTime;
+            
+            // Mobile-appropriate thresholds
+            const criticalThreshold = isMobile ? 30 : 60; // Lower for mobile
+            const lowThreshold = isMobile ? 60 : 120;     // Lower for mobile
+            const goodThreshold = isMobile ? 90 : 180;    // Lower for mobile
+            
+            // If buffer is critically low, go into super aggressive mode
+            if (bufferLength < criticalThreshold) {
+              if (!superAggressiveMode) {
+                startSuperAggressiveBuffering();
+              }
+            }
+            // If buffer is low, trigger aggressive buffering
+            else if (bufferLength < lowThreshold && !isAggressiveBuffering) {
+              startAggressiveBuffering();
+            }
+            // If buffer is good, we can relax
+            else if (bufferLength > goodThreshold && (isAggressiveBuffering || superAggressiveMode)) {
+              stopAggressiveBuffering();
+            }
+            
+          }, isMobile ? 2000 : 1000); // Less frequent checks on mobile
+        };
+        
+        // Function to get the end of the buffer
+        const getBufferedEnd = (player: any) => {
+          const buffered = player.buffered();
+          if (buffered.length === 0) {
+            return 0;
+          }
+          return buffered.end(buffered.length - 1);
+        };
+        
+        // Super aggressive mode - mobile aware
+        const startSuperAggressiveBuffering = () => {
+          superAggressiveMode = true;
+          isAggressiveBuffering = true;
+          
+          // Mobile-safe internal adjustments
+          if (player.tech_ && player.tech_.vhs) {
+            try {
+              // Set mobile-appropriate bandwidth
+              player.tech_.vhs.bandwidth = isMobile ? 5000000 : 20000000;
+              
+              if (player.tech_.vhs.masterPlaylistController_) {
+                const mainSegmentLoader = player.tech_.vhs.masterPlaylistController_.mainSegmentLoader_;
+                if (mainSegmentLoader) {
+                  mainSegmentLoader.bandwidth = isMobile ? 5000000 : 20000000;
+                  
+                  // Be more careful with multiple calls on mobile
+                  if (typeof mainSegmentLoader.fillBuffer === 'function') {
+                    mainSegmentLoader.fillBuffer();
+                    
+                    // Only call multiple times on desktop
+                    if (!isMobile) {
+                      setTimeout(() => {
+                        if (!player.isDisposed() && mainSegmentLoader) {
+                          mainSegmentLoader.fillBuffer();
+                        }
+                      }, 500);
+                    }
+                  }
+                }
+                
+                // Quality level adjustment (mobile-aware)
+                if (player.qualityLevels) {
+                  const levels = player.qualityLevels();
+                  if (levels && levels.length > 1) {
+                    // On mobile, be more aggressive with quality reduction
+                    const enableThreshold = isMobile ? 0.3 : 0.5; // Lower quality on mobile
+                    for (let i = 0; i < levels.length; i++) {
+                      levels[i].enabled = (i < Math.floor(levels.length * enableThreshold));
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.log('Mobile buffer adjustment failed', e);
+            }
+          }
+          
+          if (player.paused()) {
+            player.addClass('vjs-waiting');
+          }
+        };
+        
+        // Start aggressive buffering - normal mode
+        const startAggressiveBuffering = () => {
+          isAggressiveBuffering = true;
+          
+          if (player.tech_ && player.tech_.vhs) {
+            try {
+              // Mobile-appropriate bandwidth settings
+              player.tech_.vhs.bandwidth = isMobile ? 4000000 : 12000000;
+              
+              if (player.tech_.vhs.masterPlaylistController_) {
+                const mainSegmentLoader = player.tech_.vhs.masterPlaylistController_.mainSegmentLoader_;
+                if (mainSegmentLoader) {
+                  mainSegmentLoader.bandwidth = isMobile ? 4000000 : 12000000;
+                  
+                  if (typeof mainSegmentLoader.fillBuffer === 'function') {
+                    mainSegmentLoader.fillBuffer();
+                  }
+                }
+              }
+              
+              // If we're in super aggressive mode, restore quality levels
+              if (superAggressiveMode && player.qualityLevels) {
+                const levels = player.qualityLevels();
+                if (levels && levels.length > 1) {
+                  // On mobile, still prioritize middle quality levels
+                  const mobileOffset = isMobile ? 0.3 : 0;
+                  for (let i = 0; i < levels.length; i++) {
+                    // Skip very highest quality on mobile
+                    levels[i].enabled = isMobile 
+                      ? (i < levels.length - 1) 
+                      : true;
+                  }
+                }
+                superAggressiveMode = false;
+              }
+            } catch (e) {
+              console.log('Aggressive buffering adjustment failed', e);
+            }
+          }
+        };
+        
+        // Stop aggressive buffering
+        const stopAggressiveBuffering = () => {
+          isAggressiveBuffering = false;
+          superAggressiveMode = false;
+          
+          if (player.tech_ && player.tech_.vhs) {
+            try {
+              // Restore mobile-appropriate bandwidth
+              player.tech_.vhs.bandwidth = isMobile ? 2500000 : 5000000;
+              
+              // Re-enable appropriate quality levels
+              if (player.qualityLevels) {
+                const levels = player.qualityLevels();
+                if (levels && levels.length > 0) {
+                  // On mobile, still avoid the highest quality level to save battery
+                  for (let i = 0; i < levels.length; i++) {
+                    levels[i].enabled = isMobile 
+                      ? (i < levels.length - 1) 
+                      : true;
+                  }
+                }
+              }
+            } catch (e) {
+              console.log('Could not reset buffering mode', e);
+            }
+          }
+          
+          player.removeClass('vjs-waiting');
+        };
+        
+        // Mobile-friendly buffer display - only show if not mobile or if on a tablet
+        if (!isMobile || (isMobile && window.innerWidth >= 768)) { // 768px is typical tablet width
+          try {
+            const bufferDisplay = document.createElement('div');
+            bufferDisplay.className = 'vjs-buffer-display';
+            bufferDisplay.style.cssText = 'position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.6); color:white; padding:3px 6px; font-size:12px; z-index:2; border-radius:3px';
+            
+            player.el().appendChild(bufferDisplay);
+            
+            // Update display less frequently on mobile
+            setInterval(() => {
+              if (!player || player.isDisposed()) return;
+              
+              const currentTime = player.currentTime();
+              const bufferedEnd = getBufferedEnd(player);
+              const bufferLength = bufferedEnd - currentTime;
+              
+              // Mobile-aware thresholds
+              const lowThreshold = isMobile ? 30 : 60;
+              const mediumThreshold = isMobile ? 60 : 120;
+              
+              // Color code based on buffer health
+              let color = 'lime';
+              if (bufferLength < lowThreshold) color = 'red';
+              else if (bufferLength < mediumThreshold) color = 'orange';
+              
+              bufferDisplay.innerHTML = `Buffer: <span style="color:${color}">${Math.floor(bufferLength)}s</span>`;
+            }, isMobile ? 2000 : 1000); // Less frequent updates on mobile
+          } catch (e) {
+            console.log('Could not add buffer display for mobile');
+          }
+        }
+        
+        // Event handlers - different behavior for mobile
+        player.on('play', () => {
+          startBufferMonitoring();
+          
+          // Don't be too aggressive on mobile when play starts
+          if (!isMobile) {
+            startAggressiveBuffering();
+          }
+        });
+        
+        player.on('pause', () => {
+          // Even on mobile, buffer when paused
+          startAggressiveBuffering();
+        });
+        
+        player.on('seeking', () => {
+          startAggressiveBuffering();
+        });
+        
+        player.on('timeupdate', () => {
+          // During playback, be more conservative on mobile
+          const currentTime = player.currentTime();
+          const bufferedEnd = getBufferedEnd(player);
+          const bufferLength = bufferedEnd - currentTime;
+          
+          // Mobile-aware threshold
+          const threshold = isMobile ? 45 : 90;
+          
+          if (bufferLength < threshold && player.played().length > 0) {
+            if (currentTime > 3) {
+              startAggressiveBuffering();
+            }
+          }
+        });
+        
+        // Mobile-specific event handlers
+        if (isMobile) {
+          // Special treatment for iOS and Android
+          player.on('waiting', function() {
+            console.log('Mobile player waiting for data');
+            startSuperAggressiveBuffering();
+          });
+          
+          // For touch devices, optimize playback on touch events
+          player.on('touchstart', function() {
+            if (player.paused()) {
+              // Don't auto-play on touch, mobile browsers block this
+            } else {
+              // If already playing, buffer more
+              startAggressiveBuffering();
+            }
+          });
+          
+          // For mobile orientation changes, check buffer and quality
+          window.addEventListener('orientationchange', function() {
+            if (!player.isDisposed()) {
+              setTimeout(() => {
+                const qualityLevels = (player as any).qualityLevels && (player as any).qualityLevels();
+                if (qualityLevels && qualityLevels.length > 1) {
+                  // Re-evaluate quality after orientation change
+                  const isLandscape = window.orientation === 90 || window.orientation === -90;
+                  
+                  // In landscape, we can use higher quality
+                  for (let i = 0; i < qualityLevels.length; i++) {
+                    qualityLevels[i].enabled = isLandscape ? true : (i < qualityLevels.length - 1);
+                  }
+                  
+                  // Force buffer refresh
+                  startAggressiveBuffering();
+                }
+              }, 1000); // Wait for orientation change to complete
+            }
+          });
+        }
+        
+        // Start initial buffer monitoring
+        startBufferMonitoring();
+        
+        // Start with appropriate buffering based on device
+        if (isMobile) {
+          // Less aggressive initial buffering for mobile
+          setTimeout(() => startAggressiveBuffering(), 1000);
+        } else {
+          // Desktop can be more aggressive
+          startAggressiveBuffering();
+        }
+      };
+
+      // Mobile-aware manifest loading
+      player.on('manifestLoaded', function() {
+        console.log('HLS manifest loaded on ' + (isMobile ? 'mobile' : 'desktop'));
+        
+        // Handle quality levels with mobile awareness
+        const qualityLevels = (player as any).qualityLevels && (player as any).qualityLevels();
+        if (qualityLevels && qualityLevels.length > 1) {
+          
+          
+          // Initial loading - be more conservative on mobile
+          const initialQualityThreshold = isMobile ? 0.4 : 0.6;
+          
+          // Mobile should almost never use the highest quality initially
+          for (let i = 0; i < qualityLevels.length; i++) {
+            qualityLevels[i].enabled = (i < Math.floor(qualityLevels.length * initialQualityThreshold));
+          }
+          
+          // After buffer established, enable more qualities
+          setTimeout(() => {
+            if (player && !player.isDisposed() && qualityLevels) {
+              for (let i = 0; i < qualityLevels.length; i++) {
+                // On mobile, may still want to avoid the highest quality
+                qualityLevels[i].enabled = isMobile 
+                  ? (i < qualityLevels.length - 1) // Skip highest on mobile
+                  : true; // Enable all on desktop
+              }
+     
+            }
+          }, isMobile ? 30000 : 20000); // Longer wait on mobile
+        }
+        
+        // Force initial buffer fill
+        if (player.tech_ && player.tech_.vhs && player.tech_.vhs.masterPlaylistController_) {
+          try {
+            const mainSegmentLoader = player.tech_.vhs.masterPlaylistController_.mainSegmentLoader_;
+            if (mainSegmentLoader && typeof mainSegmentLoader.fillBuffer === 'function') {
+              mainSegmentLoader.fillBuffer();
+            }
+          } catch (e) {
+            console.log('Could not force initial buffer fill', e);
+          }
+        }
+      });
+      
+      // Mobile-specific errors & warnings
+      if (isMobile) {
+        player.on('error', function(_e: any) {
+          // Special mobile error handling beyond the general handler
+          console.log('Mobile-specific error occurred, attempting recovery');
+          
+          // Sometimes on mobile we need to fully reset the player
+          setTimeout(() => {
+            if (player && !player.isDisposed() && player.error()) {
+              // Try a hard reset
+              player.reset();
+              player.src(options.sources);
+              player.load();
+            }
+          }, 5000);
+        });
+        
+        // Mobile battery optimization
+        player.on('dispose', function() {
+          // Clean up any mobile-specific resources
+          bufferTimerRef.current && clearInterval(bufferTimerRef.current);
+        });
+      }
+      
+    } else if (playerRef.current) {
+      // Update the player if options change
+      const player = playerRef.current;
+      
+      const currentSrc = player.currentSrc();
+      const newSrc = options.sources && options.sources.length ? options.sources[0].src : null;
+      
+      if (newSrc && currentSrc !== newSrc) {
+        console.log('Source changed, updating player');
+        player.src(options.sources);
+        player.load();
+        
+        // Force reasonable buffering when changing source
+        try {
+          const isMobile = /iPhone|iPad|iPod|Android|BlackBerry|Opera Mini|IEMobile/i.test(navigator.userAgent);
+          
+          if (player.tech_ && player.tech_.vhs) {
+            // Mobile-appropriate buffer size
+            player.tech_.vhs.bufferSize_ = isMobile ? 120 : 300;
+            
+            // Force buffer reset and reload
+            if (player.tech_.vhs.masterPlaylistController_) {
+              const mainSegmentLoader = player.tech_.vhs.masterPlaylistController_.mainSegmentLoader_;
+              if (mainSegmentLoader && typeof mainSegmentLoader.fillBuffer === 'function') {
+                // Add delay for mobile
+                setTimeout(() => mainSegmentLoader.fillBuffer(), isMobile ? 1000 : 500);
+              }
+            }
+          }
+        } catch (e) {
+          console.log('Could not adjust buffer on source change', e);
+        }
+      }
+    }
+  }, [options]);
+
+  // Clean up
+  useEffect(() => {
+    return () => {
+      if (bufferTimerRef.current) {
+        clearInterval(bufferTimerRef.current);
+      }
+      
+      if (playerRef.current) {
+        playerRef.current.dispose();
+        playerRef.current = null;
+      }
+    };
+  }, []);
+
+  return (
+    <div data-vjs-player>
+      <div ref={videoRef} className="w-full h-full" />
+    </div>
+  );
+}

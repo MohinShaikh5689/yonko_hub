@@ -1,0 +1,36 @@
+# Node.js modules
+node_modules/
+
+# Build files
+dist/
+build/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+*.txt
+
+# IDE specific files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Dependency directories
+jspm_packages/
+web_modules/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Prisma
+.prisma/*
+prisma/migrations/*
+
+# Yarn
+.yarn/*

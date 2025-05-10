@@ -1,0 +1,127 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  gender    String?  @default("unspecified")
+  profile   String?  @default("default.jpg")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sentMessages     DirectMessage[] @relation("Sender")
+  receivedMessages DirectMessage[] @relation("Receiver")
+  watchlist        WatchList[]
+  sentFriendReqs   Friend[]       @relation("Sender")
+  receivedFriendReqs Friend[]     @relation("FriendReceiver")
+  comments         comment[]
+  communities      communityMembers[]
+  communityChat    communityChat[]
+  notifications    Notification[]
+}
+
+model DirectMessage {
+  id        Int       @id @default(autoincrement())
+  content   String
+  sender    User      @relation("Sender", fields: [senderId], references: [id])
+  senderId  Int
+  receiver  User      @relation("Receiver", fields: [receiverId], references: [id])
+  receiverId Int
+  createdAt DateTime  @default(now())
+
+
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+model WatchList {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  AnimeId   Int
+  Image_url String
+  English_Title   String
+  Japanese_Title  String
+  synopsis  String
+  createdAt DateTime @default(now())
+}
+model Friend {
+  id          String    @id @default(uuid())
+  status      String    @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  sender      User      @relation("Sender", fields: [senderId], references: [id])
+  senderId    Int
+  receiver    User      @relation("FriendReceiver", fields: [receiverId], references: [id])
+  receiverId  Int
+
+  @@unique([senderId, receiverId])
+}
+
+model comment {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  AnimeId   String
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model community {
+  id        Int      @id @default(autoincrement())
+  Name      String
+  Description   String
+  CoverImage    String?
+  createdAt DateTime @default(now())
+  members   communityMembers[]
+  chat      communityChat[]
+}
+
+model communityMembers {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  community community @relation(fields: [communityId], references: [id])
+  communityId Int
+  createdAt DateTime @default(now())
+  Role      Role   @default(MEMBER) 
+}
+
+model communityChat {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  community community @relation(fields: [communityId], references: [id])
+  communityId Int
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  content   String
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  MEMBER
+  ADMIN
+}

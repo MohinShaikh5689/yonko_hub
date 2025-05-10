@@ -411,7 +411,7 @@ You can also:
 
 ## 👨‍💻 Authors
 
-- **Your Name** - *Mohin shaikh* - [Your GitHub](https://github.com/MohinShaikh5689)
+- **Mohin shaikh** - [GitHub](https://github.com/MohinShaikh5689)
 
 ## 🙏 Acknowledgments
 

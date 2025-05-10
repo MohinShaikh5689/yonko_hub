@@ -64,16 +64,12 @@ export default function CommunityDetails() {
         if (!token) return;
 
         try {
-            const response = await axios.get(`https://mugiwarahubbackend-production.up.railway.app/api/community/members/${id}`, {
+           
+             const response = await axios.get(`http://localhost:3001/api/community/members/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            //  const response = await axios.get(`http://localhost:3001/api/community/members/${id}`, {
-            //     headers: {
-            //         'Authorization': `Bearer ${token}`
-            //     }
-            // });
             setCommunityMembers(response.data);
 
             // Check if current user is admin
@@ -91,7 +87,7 @@ export default function CommunityDetails() {
         if (!token || !isAdmin) return;
 
         try {
-            const response = await axios.post(`https://mugiwarahubbackend-production.up.railway.app/api/community/kick`, {
+            const response = await axios.post(`http://localhost:3001/api/community/kick`, {
                 communityId: id,
                 userId: memberId
             }, {
@@ -110,7 +106,7 @@ export default function CommunityDetails() {
         if (!token || !isAdmin) return;
 
         try {
-            await axios.post(`https://mugiwarahubbackend-production.up.railway.app/api/community/make-admin`, {
+            await axios.post(`http://localhost:30001/api/community/make-admin`, {
                 communityId: id,
                 userId: memberId
             }, {
@@ -129,7 +125,7 @@ export default function CommunityDetails() {
         if (!token || !isAdmin) return;
 
         try {
-            await axios.post(`https://mugiwarahubbackend-production.up.railway.app/api/community/remove-admin`, {
+            await axios.post(`http://localhost:3001/api/community/remove-admin`, {
                 communityId: id,
                 userId: memberId
             }, {
@@ -146,7 +142,7 @@ export default function CommunityDetails() {
 
     const leaveCommunity = async () => {
         try {
-            await axios.delete(`https://mugiwarahubbackend-production.up.railway.app/api/community/leave/${id}`, {
+            await axios.delete(`http://localhost:3001/api/community/leave/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

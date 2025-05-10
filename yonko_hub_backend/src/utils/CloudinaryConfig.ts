@@ -21,7 +21,7 @@ cloudinary.config(cloudinaryConfig);
 const communityStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'mugiwara_hub/community_covers',
+    folder: 'yonko_hub/community_covers',
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
     transformation: [{ width: 400, height: 400, crop: "fill" }]
   } as any
@@ -30,7 +30,7 @@ const communityStorage = new CloudinaryStorage({
 const profileStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'mugiwara_hub/profile_pictures',
+    folder: 'yonko_hub/profile_pictures',
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'], 
     transformation: [{ width: 400, height: 400, crop: "fill" }]
   } as any

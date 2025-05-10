@@ -78,7 +78,7 @@ export default function AddFriends() {
         try {
             // Replace with your actual API endpoint for adding friends
             await axios.post(
-                `https://mugiwarahubbackend-production.up.railway.app/api/friend/add/`, 
+                `http://localhost:3001/api/friend/add/`, 
                 {
                     receiverId: searchResult.id,
                 }, 

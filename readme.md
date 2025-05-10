@@ -3,6 +3,7 @@
 <div align="center">
   
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=flat&logo=vercel)](https://yonkohub.vercel.app)
 [![Next.js](https://img.shields.io/badge/Next.js-13.x-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18.x-green?logo=node.js)](https://nodejs.org/)
@@ -14,13 +15,14 @@
 ## 📋 Table of Contents
 
 - [🌟 Overview](#-overview)
+- [🔗 Live Demo](#-live-demo)
 - [✨ Features](#-features)
 - [🤖 AI Integration](#-ai-integration)
 - [🏗️ Project Structure](#️-project-structure)
-- [�‍💻 Technology Stack](#-technology-stack)
-- [�🚀 Installation](#-installation)
+- [👨‍💻 Technology Stack](#-technology-stack)
+- [🚀 Installation](#-installation)
   - [Frontend](#frontend-yonko_hub)
-  - [Backend](#backend-mugiwara_hub_backend)
+  - [Backend](#backend-yonko_hub_backend)
   - [API Service](#api-service-apiconsumetorg)
   - [Proxy Server](#proxy-server)
 - [💻 Usage](#-usage)
@@ -38,6 +40,14 @@
 YonkoHub is the ultimate platform for anime enthusiasts, offering a comprehensive suite of features including high-quality anime streaming, vibrant community forums, personalized watchlists, and AI-driven recommendations. Built with modern technologies like Next.js, TypeScript, and Node.js, YonkoHub provides a seamless experience for discovering, watching, and discussing anime content.
 
 The platform aggregates content from multiple providers through a custom implementation of the Consumet API, ensuring a vast library of anime titles. Real-time social features enable users to connect with fellow fans, create and join topic-specific communities, and engage in discussions about their favorite series.
+
+## 🔗 Live Demo
+
+Experience YonkoHub firsthand! Check out our live demo at:
+### [🌐 yonkohub.vercel.app](https://yonkohub.vercel.app)
+
+Create an account to access all features.
+
 
 ## ✨ Features
 
@@ -69,7 +79,7 @@ YonkoHub incorporates advanced AI technologies to enhance the user experience, p
 
 - **Content Analysis** - Our AI system can identify themes, character archetypes, and storytelling patterns to match users with anime they're likely to enjoy.
 
-- **Current Limitations** - While the AI recommendation system is fully implemented in the backend (see `mugiwara_hub_backend/src/controllers/watchlistController.ts`), it is currently not fully integrated into the frontend application due to:
+- **Current Limitations** - While the AI recommendation system is fully implemented in the backend (see `yonko_hub_backend/src/controllers/watchlistController.ts`), it is currently not fully integrated into the frontend application due to:
   - Rate limiting issues with the AI API
   - Need for additional training data to improve recommendation quality
   - UI/UX refinements required to properly display AI-generated recommendations
@@ -169,10 +179,10 @@ yarn dev
 
 The frontend will be available at http://localhost:3000
 
-### Backend (mugiwara_hub_backend)
+### Backend (yonko_hub_backend)
 
 ```bash
-cd YonkoHub/mugiwara_hub_backend
+cd YonkoHub/yonko_hub_backend
 
 # Install dependencies
 npm install
@@ -332,7 +342,7 @@ cd yonko_hub
 npm test
 
 # Run backend tests
-cd mugiwara_hub_backend
+cd yonko_hub_backend
 npm test
 ```
 

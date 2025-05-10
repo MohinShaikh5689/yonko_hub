@@ -37,7 +37,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ animeId, token }) => {
 
         setSubmittingComment(true);
         try {
-            await axios.post('https://mugiwarahubbackend-production.up.railway.app/api/anime/comment', {
+            await axios.post('http://localhost:3001/api/anime/comment', {
                 comment: commentText,
                 AnimeId: animeId,
             }, {
@@ -62,7 +62,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ animeId, token }) => {
     const fetchComments = async () => {
         setIsLoadingComments(true);
         try {
-            const response = await axios.get(`https://mugiwarahubbackend-production.up.railway.app/api/anime/comment/${animeId}`);
+            const response = await axios.get(`http://localhost:3001/api/anime/comment/${animeId}`);
 
             if (response.data.comments) {
                 const allComments = response.data.comments;

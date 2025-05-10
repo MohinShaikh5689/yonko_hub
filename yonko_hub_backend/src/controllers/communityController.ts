@@ -50,7 +50,7 @@ export const createCommunity = async (req: Request, res: Response): Promise<void
             data: {
                 Name: name,
                 Description: description,
-                CoverImage: coverImage || "https://res.cloudinary.com/your-cloud-name/image/upload/v1/mugiwara_hub/community_covers/default-cover.jpg"
+                CoverImage: coverImage || "https://res.cloudinary.com/your-cloud-name/image/upload/v1/yonko_hub/community_covers/default-cover.jpg"
             }
         });
 

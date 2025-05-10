@@ -34,7 +34,7 @@ export default function CreateCommunity({ onClose }: CreateCommunityModalProps) 
                 formData.append('coverImage', newCommunity.image);
             }
 
-            await axios.post('https://mugiwarahubbackend-production.up.railway.app/api/community/create', formData, {
+            await axios.post('http://localhost:3001/api/community/create', formData, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     // Don't set Content-Type when sending FormData
